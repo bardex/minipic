@@ -1,5 +1,5 @@
 # minipic
-[![Go Report Card](https://goreportcard.com/badge/github.com/bardex/minipic)](https://goreportcard.com/report/github.com/bardex/minipic)
+[![Go Report Card](https://goreportcard.com/badge/bardex/minipic)](https://goreportcard.com/report/bardex/minipic)
 
 HTTP сервис для генерации миниатюр изображений (учебный проект).
 
@@ -66,6 +66,14 @@ GET http://SERVICE_ADDR/MODE/WIDTH/HEIGHT/SRC
 
 ## Конфигурирование
 Для управления настройками сервиса используется конфигурационный *.toml файл. 
-По-умолчанию используется файл `configs/config.toml`  
+По-умолчанию используется файл `configs/config.toml`:
+```
+[server]
+listen = ":9011"
+
+[cache]
+limit=10
+directory="/tmp"
+```
 
 
