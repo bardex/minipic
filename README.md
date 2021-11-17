@@ -76,4 +76,7 @@ limit=10
 directory="/tmp"
 ```
 
+## TODO
+1. Тесты на всё
+2. Shutdown сервера
 
