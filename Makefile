@@ -5,7 +5,7 @@ GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S%:z) -X main.gitHash=$(GIT_HASH)
 
 build:
-	go build -o bin/minipic  cmd/*
+	go build -o bin/minipic -ldflags "$(LDFLAGS)" cmd/*
 
 run: build
 	./bin/minipic --config=configs/config.toml
