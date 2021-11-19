@@ -1,4 +1,4 @@
-package resp_cache
+package respcache
 
 import (
 	"crypto/md5"

@@ -3,9 +3,10 @@ package internal
 import (
 	"fmt"
 	"image"
+
+	// init jpeg decoder
 	_ "image/jpeg"
 	"image/png"
-	_ "image/png"
 	"io"
 	"math"
 

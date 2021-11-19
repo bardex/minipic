@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
-	"github.com/bardex/minipic/pkg/resp_cache"
+	"github.com/bardex/minipic/pkg/respcache"
 
 	"github.com/bardex/minipic/internal"
 )
@@ -18,6 +19,8 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Minipic ver: %s %s %s\n", release, buildDate, gitHash)
+
 	cfg, err := NewConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Fail loading configuration:%s", err)
@@ -29,11 +32,11 @@ func main() {
 	)
 
 	if cfg.Cache.Limit > 0 {
-		h = resp_cache.NewCacheMiddleware(resp_cache.NewLruCache(cfg.Cache.Directory, cfg.Cache.Limit), h)
+		h = respcache.NewCacheMiddleware(respcache.NewLruCache(cfg.Cache.Directory, cfg.Cache.Limit), h)
 	}
 
 	server := internal.NewServer(cfg.Server.Listen, h)
-	log.Println("listening " + cfg.Server.Listen)
+	fmt.Printf("listening on %s\n", cfg.Server.Listen)
 
 	if err := server.Start(); err != nil {
 		log.Fatalln(err)

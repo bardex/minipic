@@ -20,9 +20,9 @@ func NewImageDownloader() SimpleImageDownloader {
 	}
 }
 
-func (d SimpleImageDownloader) Download(URL string, headers http.Header) (*http.Response, error) {
+func (d SimpleImageDownloader) Download(url string, headers http.Header) (*http.Response, error) {
 	//TODO: separate errors by types
-	req, err := http.NewRequest(http.MethodGet, URL, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
