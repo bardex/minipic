@@ -1,4 +1,4 @@
-name: Minipic tests
+name: linter
 
 on:
   push:

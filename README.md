@@ -1,4 +1,5 @@
 # MINIPIC
+[![linter](https://github.com/bardex/minipic/actions/workflows/linter.yml/badge.svg?branch=master)](https://github.com/bardex/minipic/actions/workflows/linter.yml)
 [![Go Report Card](https://goreportcard.com/badge/bardex/minipic)](https://goreportcard.com/report/bardex/minipic)
 
 HTTP сервис для генерации миниатюр изображений (учебный проект).
