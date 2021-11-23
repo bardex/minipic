@@ -10,6 +10,9 @@ build:
 run: build
 	./bin/minipic --config=configs/config.toml
 
+tests:
+	go test -v -count=1 -race -timeout=1m ./test/...
+
 build-image:
 	docker build --build-arg=LDFLAGS="$(LDFLAGS)" -t $(DOCKER_IMG) -f build/Dockerfile .
 
@@ -22,4 +25,4 @@ install-lint:
 lint: install-lint
 	golangci-lint run ./...
 
-.PHONY: build run build-image run-image install-lint lint
+.PHONY: build run tests build-image run-image install-lint lint

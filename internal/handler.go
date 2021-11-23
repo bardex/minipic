@@ -47,15 +47,12 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// parse request
 	src, opts, err := h.parseRequestURI(r.URL.RequestURI())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// download image with copied headers
-	// TODO: границы ответственности класса Downloader ?
 	res, err := h.downloader.Download(src, r.Header.Clone())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
@@ -80,7 +77,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// resize image
 	err = h.resizer.Resize(res.Body, w, opts)
 
 	if err != nil {
