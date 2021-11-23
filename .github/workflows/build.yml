@@ -17,7 +17,7 @@ jobs:
       - name: Linters
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.40
+          version: v1.37.0
 
   tests_by_makefile:
     runs-on: ubuntu-latest
