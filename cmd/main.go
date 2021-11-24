@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bardex/minipic/pkg/respcache"
-
 	"github.com/bardex/minipic/internal"
+	"github.com/bardex/minipic/pkg/respcache"
 )
 
 func main() {

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"net/http"
 	"time"
 )
@@ -21,12 +22,12 @@ func NewImageDownloader() SimpleImageDownloader {
 }
 
 func (d SimpleImageDownloader) Download(url string, headers http.Header) (*http.Response, error) {
-	//TODO: separate errors by types
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header = headers
-	//TODO: validate - is the image
 	return d.client.Do(req)
 }

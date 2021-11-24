@@ -2,15 +2,14 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strconv"
 	"testing"
-
-	"github.com/bardex/minipic/internal"
-	"github.com/bardex/minipic/pkg/respcache"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -43,6 +42,7 @@ func newImageServer() *httptest.Server {
 	}))
 }
 
+/*
 func newMinipicServer() *httptest.Server {
 	h := internal.NewHandler(
 		internal.NewImageDownloader(),
@@ -51,15 +51,20 @@ func newMinipicServer() *httptest.Server {
 	h = respcache.NewCacheMiddleware(respcache.NewLruCache("tmp", 2), h)
 	return httptest.NewServer(h)
 }
+*/
 
 func TestImageServerWorked(t *testing.T) {
 	is := newImageServer()
 	defer is.Close()
 
-	res, err := http.Get(is.URL + "/sample.jpg")
-	defer res.Body.Close()
-
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, is.URL+"/sample.jpg", nil)
 	require.NoError(t, err)
+	var client http.Client
+	res, err := client.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
 	require.Equal(t, 200, res.StatusCode)
 
 	f, err := os.Open("sample.jpg")

@@ -11,7 +11,9 @@ import (
 )
 
 const (
-	ResizeModeFit  = "fit"
+	// ResizeModeFit fit image into the specified sizes.
+	ResizeModeFit = "fit"
+	// ResizeModeFill fill given dimensions with image.
 	ResizeModeFill = "fill"
 )
 

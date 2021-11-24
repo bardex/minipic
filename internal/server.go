@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-type server struct {
+type Server struct {
 	server *http.Server
 }
 
-func NewServer(addr string, handler http.Handler) *server {
-	return &server{
+func NewServer(addr string, handler http.Handler) *Server {
+	return &Server{
 		server: &http.Server{
 			Addr:    addr,
 			Handler: handler,
@@ -19,11 +19,11 @@ func NewServer(addr string, handler http.Handler) *server {
 	}
 }
 
-func (s *server) Start() error {
+func (s *Server) Start() error {
 	return s.server.ListenAndServe()
 }
 
-func (s *server) Stop() error {
+func (s *Server) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	return s.server.Shutdown(ctx)

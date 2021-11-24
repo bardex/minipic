@@ -12,6 +12,7 @@ import (
 	"sync"
 )
 
+// ErrCacheFileNotExists The expected cache file does not exist.
 var ErrCacheFileNotExists = errors.New("cache file not exists")
 
 type ResponseCache struct {
@@ -103,7 +104,6 @@ func (rc *ResponseCache) Read(w http.ResponseWriter) error {
 
 	r := bufio.NewReader(f)
 
-	//read status
 	line, err := r.ReadString('\n')
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (rc *ResponseCache) Read(w http.ResponseWriter) error {
 	// read headers
 	for {
 		line, err := r.ReadString('\n')
-		if err == io.EOF || line == "\n" {
+		if errors.Is(err, io.EOF) || line == "\n" {
 			break
 		}
 		if err != nil {
@@ -134,7 +134,7 @@ func (rc *ResponseCache) Read(w http.ResponseWriter) error {
 	buf := make([]byte, 1024)
 	for {
 		n, err := r.Read(buf)
-		if err == io.EOF || n == 0 {
+		if errors.Is(err, io.EOF) || n == 0 {
 			break
 		}
 		if err != nil {

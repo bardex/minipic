@@ -1,9 +1,9 @@
 package respcache
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"hash/fnv"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -102,9 +102,8 @@ func (c *LruCache) remove(rc *ResponseCache) {
 }
 
 func (c *LruCache) getFilename(key string) string {
-	ext := ".minipic.cache"
-	hasher := md5.New()
+	hasher := fnv.New64a()
 	hasher.Write([]byte(key))
 	key = hex.EncodeToString(hasher.Sum(nil))
-	return filepath.Join(c.directory, key) + ext
+	return filepath.Join(c.directory, key) + ".cache"
 }

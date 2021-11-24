@@ -22,5 +22,4 @@ func TestResizerByImaging_Resize(t *testing.T) {
 
 	err = resizer.Resize(src, dst, internal.ResizeOptions{Mode: "fill", Width: 600, Height: 600})
 	require.NoError(t, err)
-
 }

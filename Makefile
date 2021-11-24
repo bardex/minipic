@@ -11,7 +11,7 @@ run: build
 	./bin/minipic --config=configs/config.toml
 
 tests:
-	go test -v -count=1 -race -timeout=1m ./test/...
+	go test -v -count=10 -race -timeout=1m ./test/...
 
 build-image:
 	docker build --build-arg=LDFLAGS="$(LDFLAGS)" -t $(DOCKER_IMG) -f build/Dockerfile .
@@ -23,6 +23,6 @@ install-lint:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.37.0
 
 lint: install-lint
-	golangci-lint run ./...
+	golangci-lint run
 
 .PHONY: build run tests build-image run-image install-lint lint

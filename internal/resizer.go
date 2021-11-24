@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image"
 
-	// init jpeg decoder
+	// init jpeg decoder.
 	_ "image/jpeg"
 	"image/png"
 	"io"
