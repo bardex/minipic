@@ -52,7 +52,7 @@ GET http://SERVICE_ADDR/MODE/WIDTH/HEIGHT/SRC
 - HEIGHT - целевая высота изображения в px
 - SRC - полный URL исходного изображения
 
-Например: [http://127.0.0.1:9011/fit/600/400/https://cdn.pixabay.com/photo/2020/11/01/10/35/street-5703332_960_720.jpg](http://127.0.0.1:9011/fit/600/400/https://cdn.pixabay.com/photo/2020/11/01/10/35/street-5703332_960_720.jpg)
+Например: [http://127.0.0.1:9011/fill/800/800/https://images.pexels.com/photos/9009957/pexels-photo-9009957.jpeg](http://127.0.0.1:9011/fill/800/800/https://images.pexels.com/photos/9009957/pexels-photo-9009957.jpeg)
 
 
 ## Makefile
