@@ -1,11 +1,13 @@
-package respcache
+package middleware
 
 import (
 	"log"
 	"net/http"
+
+	"github.com/bardex/minipic/internal/respcache"
 )
 
-func NewCacheMiddleware(cache *LruCache, next http.Handler) http.Handler {
+func NewCacheMiddleware(cache *respcache.LruCache, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hit, err := cache.Read(r.RequestURI, w)
 		if err != nil {

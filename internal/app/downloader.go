@@ -1,4 +1,4 @@
-package internal
+package app
 
 import (
 	"context"
@@ -22,8 +22,8 @@ func NewImageDownloader() SimpleImageDownloader {
 }
 
 func (d SimpleImageDownloader) Download(url string, headers http.Header) (*http.Response, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
+	//defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

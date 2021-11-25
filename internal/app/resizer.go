@@ -1,4 +1,4 @@
-package internal
+package app
 
 import (
 	"fmt"
@@ -7,15 +7,17 @@ import (
 	// init jpeg decoder.
 	_ "image/jpeg"
 	"image/png"
+	_ "image/png"
 	"io"
 	"math"
 
+	"github.com/bardex/minipic/internal/httpserver"
 	"github.com/disintegration/imaging"
 )
 
-type ResizerByImaging struct{}
+type Resizer struct{}
 
-func (r ResizerByImaging) Resize(src io.Reader, dst io.Writer, opts ResizeOptions) error {
+func (r Resizer) Resize(src io.Reader, dst io.Writer, opts httpserver.ResizeOptions) error {
 	img, imtype, err := image.Decode(src)
 	if err != nil {
 		return fmt.Errorf("image decode error:%w", err)
@@ -25,12 +27,12 @@ func (r ResizerByImaging) Resize(src io.Reader, dst io.Writer, opts ResizeOption
 	srcHeight := float64(img.Bounds().Dy())
 
 	switch opts.Mode {
-	case ResizeModeFit:
+	case httpserver.ResizeModeFit:
 		k := math.Max(srcWidth/float64(opts.Width), srcHeight/float64(opts.Height))
 		width := int(math.Round(srcWidth / k))
 		height := int(math.Round(srcHeight / k))
 		img = imaging.Resize(img, width, height, imaging.Lanczos)
-	case ResizeModeFill:
+	case httpserver.ResizeModeFill:
 		k := math.Min(srcWidth/float64(opts.Width), srcHeight/float64(opts.Height))
 		width := int(math.Round(srcWidth / k))
 		height := int(math.Round(srcHeight / k))

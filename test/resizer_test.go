@@ -4,12 +4,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/bardex/minipic/internal"
+	"github.com/bardex/minipic/internal/app"
+	"github.com/bardex/minipic/internal/httpserver"
 	"github.com/stretchr/testify/require"
 )
 
 func TestResizerByImaging_Resize(t *testing.T) {
-	var resizer internal.ImageResizer = internal.ResizerByImaging{}
+	var resizer httpserver.ImageResizer = app.Resizer{}
 
 	src, err := os.Open("sample.jpg")
 	require.NoError(t, err)
@@ -20,6 +21,6 @@ func TestResizerByImaging_Resize(t *testing.T) {
 	defer dst.Close()
 	defer os.Remove(dst.Name())
 
-	err = resizer.Resize(src, dst, internal.ResizeOptions{Mode: "fill", Width: 600, Height: 600})
+	err = resizer.Resize(src, dst, httpserver.ResizeOptions{Mode: "fill", Width: 600, Height: 600})
 	require.NoError(t, err)
 }

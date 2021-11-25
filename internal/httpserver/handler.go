@@ -1,4 +1,4 @@
-package internal
+package httpserver
 
 import (
 	"errors"
@@ -13,11 +13,12 @@ import (
 const (
 	// ResizeModeFit fit image into the specified sizes.
 	ResizeModeFit = "fit"
+
 	// ResizeModeFill fill given dimensions with image.
 	ResizeModeFill = "fill"
 )
 
-type ImageDownloader interface {
+type Downloader interface {
 	Download(URL string, headers http.Header) (*http.Response, error)
 }
 
@@ -32,11 +33,11 @@ type ResizeOptions struct {
 }
 
 type Handler struct {
-	downloader ImageDownloader
+	downloader Downloader
 	resizer    ImageResizer
 }
 
-func NewHandler(d ImageDownloader, r ImageResizer) http.Handler {
+func NewHandler(d Downloader, r ImageResizer) http.Handler {
 	return Handler{
 		downloader: d,
 		resizer:    r,

@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-// ErrCacheFileNotExists The expected cache file does not exist.
+// ErrCacheFileNotExists The expected cache-file does not exist.
 var ErrCacheFileNotExists = errors.New("cache file not exists")
 
 type ResponseCache struct {

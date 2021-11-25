@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bardex/minipic/internal"
-	"github.com/bardex/minipic/pkg/respcache"
+	"github.com/bardex/minipic/internal/app"
+	"github.com/bardex/minipic/internal/httpserver"
+	"github.com/bardex/minipic/internal/httpserver/middleware"
+	"github.com/bardex/minipic/internal/respcache"
 )
 
 func main() {
@@ -25,16 +27,16 @@ func main() {
 		log.Fatalf("Fail loading configuration:%s", err)
 	}
 
-	h := internal.NewHandler(
-		internal.NewImageDownloader(),
-		internal.ResizerByImaging{},
+	h := httpserver.NewHandler(
+		app.NewImageDownloader(),
+		app.Resizer{},
 	)
 
 	if cfg.Cache.Limit > 0 {
-		h = respcache.NewCacheMiddleware(respcache.NewLruCache(cfg.Cache.Directory, cfg.Cache.Limit), h)
+		h = middleware.NewCacheMiddleware(respcache.NewLruCache(cfg.Cache.Directory, cfg.Cache.Limit), h)
 	}
 
-	server := internal.NewServer(cfg.Server.Listen, h)
+	server := httpserver.NewServer(cfg.Server.Listen, h)
 	fmt.Printf("listening on %s\n", cfg.Server.Listen)
 
 	if err := server.Start(); err != nil {
