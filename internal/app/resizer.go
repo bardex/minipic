@@ -1,13 +1,13 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"image"
 
 	// init jpeg decoder.
 	_ "image/jpeg"
 	"image/png"
-	_ "image/png"
 	"io"
 	"math"
 
@@ -15,12 +15,20 @@ import (
 	"github.com/disintegration/imaging"
 )
 
+var (
+	ErrUnsupportedFormat = errors.New("unsupported image format")
+	ErrUnsupportedMode   = errors.New("unsupported resize mode")
+)
+
 type Resizer struct{}
 
 func (r Resizer) Resize(src io.Reader, dst io.Writer, opts httpserver.ResizeOptions) error {
 	img, imtype, err := image.Decode(src)
 	if err != nil {
-		return fmt.Errorf("image decode error:%w", err)
+		if errors.Is(err, image.ErrFormat) {
+			return ErrUnsupportedFormat
+		}
+		return err
 	}
 
 	srcWidth := float64(img.Bounds().Dx())
@@ -46,22 +54,28 @@ func (r Resizer) Resize(src io.Reader, dst io.Writer, opts httpserver.ResizeOpti
 			img = imaging.Crop(img, image.Rect(0, padY, width, padY+opts.Height))
 		}
 	default:
-		return fmt.Errorf("unknown resize mode: %s", opts.Mode)
+		return fmt.Errorf("%w: %s", ErrUnsupportedMode, opts.Mode)
 	}
 
 	switch imtype {
 	case "jpeg":
 		err = imaging.Encode(dst, img, imaging.JPEG, imaging.JPEGQuality(85))
 		if err != nil {
-			return fmt.Errorf("image encode error:%w", err)
+			if errors.Is(err, image.ErrFormat) {
+				return ErrUnsupportedFormat
+			}
+			return err
 		}
 	case "png":
 		err = imaging.Encode(dst, img, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression))
 		if err != nil {
-			return fmt.Errorf("image encode error:%w", err)
+			if errors.Is(err, image.ErrFormat) {
+				return ErrUnsupportedFormat
+			}
+			return err
 		}
 	default:
-		return fmt.Errorf("image encode error: unknown type:%s", imtype)
+		return fmt.Errorf("%w: %s", ErrUnsupportedFormat, imtype)
 	}
 
 	return nil

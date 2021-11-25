@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bardex/minipic/internal/app"
+	"github.com/bardex/minipic/internal/httpserver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,6 +20,7 @@ func newImageServer() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for k, vs := range r.Header {
 			for _, v := range vs {
+				// return request headers for check it
 				w.Header().Add("X-From-"+k, v)
 			}
 		}
@@ -42,16 +45,14 @@ func newImageServer() *httptest.Server {
 	}))
 }
 
-/*
 func newMinipicServer() *httptest.Server {
-	h := internal.NewHandler(
-		internal.NewImageDownloader(),
-		internal.ResizerByImaging{},
+	h := httpserver.NewHandler(
+		app.NewImageDownloader(),
+		app.Resizer{},
 	)
-	h = respcache.NewCacheMiddleware(respcache.NewLruCache("tmp", 2), h)
+	//h = middleware.NewCache(respcache.NewLruCache("tmp", 2), h)
 	return httptest.NewServer(h)
 }
-*/
 
 func TestImageServerWorked(t *testing.T) {
 	is := newImageServer()
@@ -79,4 +80,23 @@ func TestImageServerWorked(t *testing.T) {
 	imgLoc, err := io.ReadAll(f)
 	require.NoError(t, err)
 	require.True(t, bytes.Equal(imgSer, imgLoc))
+}
+
+func TestMinipic(t *testing.T) {
+	is := newImageServer()
+	defer is.Close()
+	mp := newMinipicServer()
+	defer mp.Close()
+
+	url := mp.URL + "/fit/500/500/" + is.URL + "/sample.png"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	require.NoError(t, err)
+	var client http.Client
+	res, err := client.Do(req)
+	require.NoError(t, err)
+	defer res.Body.Close()
+	require.Equal(t, 200, res.StatusCode)
 }
