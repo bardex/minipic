@@ -21,9 +21,7 @@ func NewImageDownloader() SimpleImageDownloader {
 	}
 }
 
-func (d SimpleImageDownloader) Download(url string, headers http.Header) (*http.Response, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 100*time.Second)
-	//defer cancel()
+func (d SimpleImageDownloader) Download(ctx context.Context, url string, headers http.Header) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

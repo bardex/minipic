@@ -1,6 +1,8 @@
 package httpserver
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -19,7 +22,7 @@ const (
 )
 
 type Downloader interface {
-	Download(URL string, headers http.Header) (*http.Response, error)
+	Download(ctx context.Context, URL string, headers http.Header) (*http.Response, error)
 }
 
 type ImageResizer interface {
@@ -56,36 +59,35 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.downloader.Download(src, r.Header.Clone())
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.downloader.Download(ctx, src, r.Header.Clone())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 	defer res.Body.Close()
 
-	w.WriteHeader(res.StatusCode)
+	res.Header.Del("Content-Length")
+
 	for k, v := range res.Header {
-		// because resize...
-		if strings.ToLower(k) == "content-length" {
-			continue
-		}
 		w.Header()[k] = v
 	}
 
-	// check error
 	if res.StatusCode != 200 {
-		if _, err := io.Copy(w, res.Body); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		w.WriteHeader(res.StatusCode)
+		io.Copy(w, res.Body)
 		return
 	}
 
-	err = h.resizer.Resize(res.Body, w, opts)
-
-	if err != nil {
+	var img bytes.Buffer
+	if err = h.resizer.Resize(res.Body, &img, opts); err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
+	w.Header().Set("Content-Length", strconv.Itoa(img.Len()))
+	io.Copy(w, &img)
 }
 
 func (h Handler) parseRequestURI(uri string) (src string, opts ResizeOptions, err error) {
@@ -117,7 +119,7 @@ func (h Handler) parseRequestURI(uri string) (src string, opts ResizeOptions, er
 
 	imgSrc, err := url.ParseRequestURI(params[3])
 	if err != nil || (imgSrc.Scheme != "http" && imgSrc.Scheme != "https") || imgSrc.Host == "" {
-		err = errors.New("invalid image url")
+		err = errors.New("image URL must be absolute")
 		return
 	}
 

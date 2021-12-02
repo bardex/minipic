@@ -1,10 +1,8 @@
-package respcache
+package app
 
 import (
 	"encoding/hex"
-	"errors"
 	"hash/fnv"
-	"net/http"
 	"path/filepath"
 	"sync"
 )
@@ -12,7 +10,7 @@ import (
 type LruCache struct {
 	directory string
 	capacity  int
-	mu        sync.RWMutex
+	mu        sync.Mutex
 	items     map[string]*ResponseCache
 	front     *ResponseCache
 	back      *ResponseCache
@@ -26,58 +24,43 @@ func NewLruCache(cacheDir string, maxEntities int) *LruCache {
 	}
 }
 
-func (c *LruCache) CreateResponseCache(key string) *ResponseCache {
+func (c *LruCache) GetItem(key string) *ResponseCache {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	key = c.getHash(key)
+	if item, exists := c.items[key]; exists {
+		return item
+	}
+
 	return &ResponseCache{
-		key:      key,
+		key:      c.getHash(key),
 		filename: c.getFilename(key),
 	}
 }
 
-func (c *LruCache) Read(key string, w http.ResponseWriter) (bool, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	rc, exists := c.items[key]
-	if !exists {
-		return false, nil
-	}
-
-	err := rc.Read(w)
-	if errors.Is(err, ErrCacheFileNotExists) {
-		c.remove(rc)
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	c.PushFront(rc)
-	return true, nil
-}
-
-func (c *LruCache) PushFront(rc *ResponseCache) {
-	if c.front == rc {
-		return
-	}
-
+func (c *LruCache) PushFront(item *ResponseCache) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if len(c.items) >= c.capacity {
-		last := c.back
-		if last != nil {
-			c.remove(last)
-		}
+	if c.front == item {
+		return
 	}
 
-	if len(c.items) == 0 {
-		c.front = rc
-		c.back = rc
-	} else {
-		c.front.prev = rc
-		rc.next = c.front
-		c.front = rc
+	if len(c.items) >= c.capacity {
+		if c.back != nil {
+			c.remove(c.back)
+		}
 	}
-	c.items[rc.key] = rc
+	if len(c.items) == 0 {
+		c.front = item
+		c.back = item
+	} else {
+		c.front.prev = item
+		item.next = c.front
+		c.front = item
+	}
+	c.items[item.key] = item
 }
 
 func (c *LruCache) remove(rc *ResponseCache) {
@@ -102,8 +85,11 @@ func (c *LruCache) remove(rc *ResponseCache) {
 }
 
 func (c *LruCache) getFilename(key string) string {
+	return filepath.Join(c.directory, c.getHash(key)) + ".cache"
+}
+
+func (c *LruCache) getHash(key string) string {
 	hasher := fnv.New64a()
 	hasher.Write([]byte(key))
-	key = hex.EncodeToString(hasher.Sum(nil))
-	return filepath.Join(c.directory, key) + ".cache"
+	return hex.EncodeToString(hasher.Sum(nil))
 }

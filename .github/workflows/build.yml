@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: tests
-        run: go test -v -count=10 -race -timeout=1m ./test/...
+        run: make tests
 
       - name: build
         run: make build

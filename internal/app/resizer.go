@@ -16,8 +16,10 @@ import (
 )
 
 var (
+	// ErrUnsupportedFormat unsupported image format.
 	ErrUnsupportedFormat = errors.New("unsupported image format")
-	ErrUnsupportedMode   = errors.New("unsupported resize mode")
+	// ErrUnsupportedMode unsupported resize mode.
+	ErrUnsupportedMode = errors.New("unsupported resize mode")
 )
 
 type Resizer struct{}

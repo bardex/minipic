@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"os"
@@ -30,31 +31,30 @@ func TestResizer(t *testing.T) {
 		{file: "sample.webp", mode: "fill", width: 600, height: 800, format: "", err: app.ErrUnsupportedFormat},
 		{file: "sample.webp", mode: "fit", width: 800, height: 800, format: "", err: app.ErrUnsupportedFormat},
 	}
+
 	resizer := app.Resizer{}
+
 	for _, tt := range tests {
 		tt := tt
 		name := fmt.Sprintf("%s_%s_%d_%d", tt.file, tt.mode, tt.width, tt.height)
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			src, err := os.Open(tt.file)
 			require.NoError(t, err)
 			defer src.Close()
 
-			dst, err := os.CreateTemp("../tmp", "minipictest")
-			require.NoError(t, err)
-			defer dst.Close()
-			defer os.Remove(dst.Name())
+			var dst bytes.Buffer
 
-			err = resizer.Resize(src, dst, httpserver.ResizeOptions{Mode: tt.mode, Width: tt.width, Height: tt.height})
+			err = resizer.Resize(src, &dst, httpserver.ResizeOptions{Mode: tt.mode, Width: tt.width, Height: tt.height})
 			if tt.err != nil {
 				require.ErrorIs(t, err, tt.err)
 				return
 			}
+
 			require.NoError(t, err)
 
-			_, err = dst.Seek(0, 0)
-			require.NoError(t, err)
-
-			img, format, err := image.Decode(dst)
+			img, format, err := image.Decode(&dst)
 			require.NoError(t, err)
 
 			w := img.Bounds().Max.X
