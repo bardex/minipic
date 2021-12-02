@@ -61,19 +61,11 @@ func (r Resizer) Resize(src io.Reader, dst io.Writer, opts httpserver.ResizeOpti
 
 	switch imtype {
 	case "jpeg":
-		err = imaging.Encode(dst, img, imaging.JPEG, imaging.JPEGQuality(85))
-		if err != nil {
-			if errors.Is(err, image.ErrFormat) {
-				return ErrUnsupportedFormat
-			}
+		if err = imaging.Encode(dst, img, imaging.JPEG, imaging.JPEGQuality(85)); err != nil {
 			return err
 		}
 	case "png":
-		err = imaging.Encode(dst, img, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression))
-		if err != nil {
-			if errors.Is(err, image.ErrFormat) {
-				return ErrUnsupportedFormat
-			}
+		if err = imaging.Encode(dst, img, imaging.PNG, imaging.PNGCompressionLevel(png.BestCompression)); err != nil {
 			return err
 		}
 	default:
