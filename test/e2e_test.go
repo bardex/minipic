@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image"
 	"io"
 	"net/http"
@@ -48,13 +49,19 @@ func newImageServer() *httptest.Server {
 	}))
 }
 
-func newMinipicServer() *httptest.Server {
+func newMinipicServer() (*httptest.Server, func()) {
 	h := httpserver.NewHandler(
 		app.NewImageDownloader(),
 		app.Resizer{},
 	)
-	h = middleware.NewCache(app.NewLruCache("/tmp", 2), h)
-	return httptest.NewServer(h)
+	cache := app.NewLruCache("/tmp", 2)
+	h = middleware.NewCache(cache, h)
+	s := httptest.NewServer(h)
+	closer := func() {
+		s.Close()
+		cache.Clear()
+	}
+	return s, closer
 }
 
 func TestLocalImageServer(t *testing.T) {
@@ -88,8 +95,8 @@ func TestLocalImageServer(t *testing.T) {
 func TestMinipicServer(t *testing.T) {
 	is := newImageServer()
 	defer is.Close()
-	mp := newMinipicServer()
-	defer mp.Close()
+	mp, closer := newMinipicServer()
+	defer closer()
 
 	tests := []struct {
 		url    string
@@ -103,44 +110,60 @@ func TestMinipicServer(t *testing.T) {
 		{url: mp.URL + "/fit/800/800/" + is.URL + "/sample.jpeg", status: 200, w: 800, h: 800},
 		{url: mp.URL + "/fit/800/800/" + is.URL + "/sample.webp", status: 502, w: 800, h: 800},
 		{url: mp.URL + "/fit/800/800/" + is.URL + "/404", status: 404, w: 800, h: 800},
+		{url: mp.URL + "/crop/800/800/" + is.URL + "/sample.png", status: 400, w: 800, h: 800},
+		{url: mp.URL + "/crop/800/800/invalid_img_url", status: 400, w: 800, h: 800},
 	}
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.url, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-			defer cancel()
+		// make two requests to check the cache
+		for n := 1; n <= 2; n++ {
+			n := n
+			t.Run(fmt.Sprintf("%s (%d)", tt.url, n), func(t *testing.T) {
+				ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+				defer cancel()
 
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, tt.url, nil)
-			require.NoError(t, err)
-			req.Header.Set("User-Agent", "Firefox")
-			req.Header.Set("Accept-Encoding", "gzip,deflate")
-
-			var client http.Client
-			result, err := client.Do(req)
-
-			require.NoError(t, err)
-			defer result.Body.Close()
-
-			require.Equal(t, tt.status, result.StatusCode)
-			body, err := io.ReadAll(result.Body)
-			require.NoError(t, err)
-			require.Equal(t, strconv.Itoa(len(body)), result.Header.Get("Content-Length"))
-
-			// tests proxy-headers
-			require.Equal(t, "test-server", result.Header.Get("X-Name"))
-			require.Equal(t, req.Header.Get("User-Agent"), result.Header.Get("X-From-User-Agent"))
-			require.Equal(t, req.Header.Get("Accept-Encoding"), result.Header.Get("X-From-Accept-Encoding"))
-
-			if result.StatusCode == 200 {
-				require.Contains(t, result.Header.Get("Content-Type"), "image/")
-				img, _, err := image.Decode(bytes.NewReader(body))
+				req, err := http.NewRequestWithContext(ctx, http.MethodGet, tt.url, nil)
 				require.NoError(t, err)
-				w := img.Bounds().Max.X
-				h := img.Bounds().Max.Y
-				require.LessOrEqual(t, w, tt.w)
-				require.LessOrEqual(t, h, tt.h)
-			}
-		})
+				req.Header.Set("User-Agent", "Firefox")
+				req.Header.Set("Accept-Encoding", "gzip,deflate")
+
+				var client http.Client
+				result, err := client.Do(req)
+
+				require.NoError(t, err)
+				defer result.Body.Close()
+
+				require.Equal(t, tt.status, result.StatusCode)
+				body, err := io.ReadAll(result.Body)
+				require.NoError(t, err)
+				require.Equal(t, strconv.Itoa(len(body)), result.Header.Get("Content-Length"))
+
+				// check proxy-headers (except bad requests)
+				if result.StatusCode != 400 {
+					require.Equal(t, "test-server", result.Header.Get("X-Name"))
+					require.Equal(t, req.Header.Get("User-Agent"), result.Header.Get("X-From-User-Agent"))
+					require.Equal(t, req.Header.Get("Accept-Encoding"), result.Header.Get("X-From-Accept-Encoding"))
+				}
+
+				// check image resized and cache
+				if result.StatusCode == 200 {
+					// check cache
+					if n == 1 {
+						require.Equal(t, "", result.Header.Get("X-Minipic-Cache"))
+					} else {
+						require.Equal(t, "HIT", result.Header.Get("X-Minipic-Cache"))
+					}
+
+					require.Contains(t, result.Header.Get("Content-Type"), "image/")
+					img, _, err := image.Decode(bytes.NewReader(body))
+					require.NoError(t, err)
+					w := img.Bounds().Max.X
+					h := img.Bounds().Max.Y
+					require.LessOrEqual(t, w, tt.w)
+					require.LessOrEqual(t, h, tt.h)
+				}
+			})
+		}
 	}
 }

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
@@ -11,9 +12,9 @@ import (
 func NewCache(cache *app.LruCache, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := r.URL.RequestURI()
-		rc := cache.GetItem(key)
+		rc := cache.GetOrCreateItem(key)
 
-		if rc.NotEmpty() {
+		if rc.IsExists() {
 			if err := rc.WriteTo(w); err == nil {
 				return
 			}
@@ -29,14 +30,20 @@ func NewCache(cache *app.LruCache, next http.Handler) http.Handler {
 		body, _ := ioutil.ReadAll(result.Body)
 
 		if result.StatusCode == 200 {
-			rc.Save(result.Header, body)
-			cache.PushFront(rc)
+			err := rc.Save(result.Header, body)
+			if err == nil {
+				cache.PushFront(rc)
+			} else {
+				log.Println(err)
+			}
 		}
 
 		for k, v := range result.Header {
 			w.Header()[k] = v
 		}
 		w.WriteHeader(result.StatusCode)
-		w.Write(body)
+		if _, err := w.Write(body); err != nil {
+			log.Println(err)
+		}
 	})
 }

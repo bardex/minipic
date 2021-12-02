@@ -33,23 +33,6 @@ jobs:
       - name: tests
         run: make tests
 
-  coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.17
-
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: tests
-        run: go test -v -coverprofile=coverage.txt -covermode=atomic -timeout=10m ./test/...
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
-
   build:
     runs-on: ubuntu-latest
     steps:

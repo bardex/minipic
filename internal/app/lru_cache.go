@@ -24,19 +24,25 @@ func NewLruCache(cacheDir string, maxEntities int) *LruCache {
 	}
 }
 
-func (c *LruCache) GetItem(key string) *ResponseCache {
+func (c *LruCache) CreateItem(key string) *ResponseCache {
+	internalKey := c.getHash(key)
+	return &ResponseCache{
+		key:      internalKey,
+		filename: c.getFilename(internalKey),
+	}
+}
+
+func (c *LruCache) GetOrCreateItem(key string) *ResponseCache {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	key = c.getHash(key)
-	if item, exists := c.items[key]; exists {
+	// use a permanent key instead of the built-in, for to restore cache from files after restarting (todo).
+	internalKey := c.getHash(key)
+	if item, exists := c.items[internalKey]; exists {
 		return item
 	}
 
-	return &ResponseCache{
-		key:      c.getHash(key),
-		filename: c.getFilename(key),
-	}
+	return c.CreateItem(key)
 }
 
 func (c *LruCache) PushFront(item *ResponseCache) {
@@ -63,7 +69,19 @@ func (c *LruCache) PushFront(item *ResponseCache) {
 	c.items[item.key] = item
 }
 
-func (c *LruCache) remove(rc *ResponseCache) {
+func (c *LruCache) Clear() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for _, rc := range c.items {
+		if err := c.remove(rc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *LruCache) remove(rc *ResponseCache) error {
 	if c.front == rc {
 		c.front = rc.next
 	}
@@ -81,11 +99,11 @@ func (c *LruCache) remove(rc *ResponseCache) {
 
 	delete(c.items, rc.key)
 
-	rc.Remove()
+	return rc.Remove()
 }
 
-func (c *LruCache) getFilename(key string) string {
-	return filepath.Join(c.directory, c.getHash(key)) + ".cache"
+func (c *LruCache) getFilename(internalKey string) string {
+	return filepath.Join(c.directory, internalKey) + ".cache"
 }
 
 func (c *LruCache) getHash(key string) string {

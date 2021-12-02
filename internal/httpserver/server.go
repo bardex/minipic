@@ -3,7 +3,6 @@ package httpserver
 import (
 	"context"
 	"net/http"
-	"time"
 )
 
 type Server struct {
@@ -23,8 +22,6 @@ func (s *Server) Start() error {
 	return s.server.ListenAndServe()
 }
 
-func (s *Server) Stop() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (s *Server) Stop(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }

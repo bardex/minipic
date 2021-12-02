@@ -15,7 +15,7 @@ import (
 var ErrCacheFileNotExists = errors.New("cache file not exists")
 
 type ResponseCache struct {
-	notEmpty bool
+	exists   bool
 	key      string
 	filename string
 	next     *ResponseCache
@@ -23,11 +23,11 @@ type ResponseCache struct {
 	mu       sync.RWMutex
 }
 
-func (rc *ResponseCache) NotEmpty() bool {
+func (rc *ResponseCache) IsExists() bool {
 	rc.mu.RLock()
 	defer rc.mu.RUnlock()
 
-	return rc.notEmpty
+	return rc.exists
 }
 
 func (rc *ResponseCache) Save(headers http.Header, body []byte) error {
@@ -55,7 +55,7 @@ func (rc *ResponseCache) Save(headers http.Header, body []byte) error {
 	if _, err := f.Write(body); err != nil {
 		return err
 	}
-	rc.notEmpty = true
+	rc.exists = true
 	return nil
 }
 
@@ -90,6 +90,8 @@ func (rc *ResponseCache) WriteTo(w http.ResponseWriter) error {
 		}
 		w.Header().Add(heads[0], heads[1])
 	}
+
+	w.Header().Add("X-Minipic-Cache", "HIT")
 
 	// read body
 	buf := make([]byte, 1024)

@@ -77,8 +77,3 @@ limit=10
 directory="/tmp"
 ```
 
-## TODO
-1. Тесты на всё
-2. Shutdown сервера
-3. прикрутить GitHub Actions для CI/CD
-
