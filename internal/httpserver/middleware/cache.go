@@ -12,12 +12,12 @@ import (
 func NewCache(cache *app.LruCache, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := r.URL.RequestURI()
-		rc := cache.GetOrCreateItem(key)
-
-		if rc.IsExists() {
-			if err := rc.WriteTo(w); err == nil {
-				return
-			}
+		hit, err := cache.GetAndWriteTo(key, w)
+		if hit {
+			return
+		}
+		if err != nil {
+			log.Println(err)
 		}
 
 		rec := httptest.NewRecorder()
@@ -25,15 +25,13 @@ func NewCache(cache *app.LruCache, next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r)
 
 		result := rec.Result()
-		defer result.Body.Close()
+		result.Body.Close()
 
 		body, _ := ioutil.ReadAll(result.Body)
 
 		if result.StatusCode == 200 {
-			err := rc.Save(result.Header, body)
-			if err == nil {
-				cache.PushFront(rc)
-			} else {
+			err := cache.Save(key, result.Header, body)
+			if err != nil {
 				log.Println(err)
 			}
 		}
@@ -42,6 +40,7 @@ func NewCache(cache *app.LruCache, next http.Handler) http.Handler {
 			w.Header()[k] = v
 		}
 		w.WriteHeader(result.StatusCode)
+
 		if _, err := w.Write(body); err != nil {
 			log.Println(err)
 		}

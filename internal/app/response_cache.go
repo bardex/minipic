@@ -15,19 +15,11 @@ import (
 var ErrCacheFileNotExists = errors.New("cache file not exists")
 
 type ResponseCache struct {
-	exists   bool
 	key      string
 	filename string
 	next     *ResponseCache
 	prev     *ResponseCache
 	mu       sync.RWMutex
-}
-
-func (rc *ResponseCache) IsExists() bool {
-	rc.mu.RLock()
-	defer rc.mu.RUnlock()
-
-	return rc.exists
 }
 
 func (rc *ResponseCache) Save(headers http.Header, body []byte) error {
@@ -55,7 +47,7 @@ func (rc *ResponseCache) Save(headers http.Header, body []byte) error {
 	if _, err := f.Write(body); err != nil {
 		return err
 	}
-	rc.exists = true
+
 	return nil
 }
 

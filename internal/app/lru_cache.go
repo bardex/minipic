@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"hash/fnv"
+	"net/http"
 	"path/filepath"
 	"sync"
 )
@@ -10,7 +11,7 @@ import (
 type LruCache struct {
 	directory string
 	capacity  int
-	mu        sync.Mutex
+	mu        sync.RWMutex
 	items     map[string]*ResponseCache
 	front     *ResponseCache
 	back      *ResponseCache
@@ -24,12 +25,31 @@ func NewLruCache(cacheDir string, maxEntities int) *LruCache {
 	}
 }
 
-func (c *LruCache) CreateItem(key string) *ResponseCache {
+func (c *LruCache) GetAndWriteTo(key string, w http.ResponseWriter) (bool, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	// use a permanent key instead of the built-in, for to restore cache from files after restarting (todo).
 	internalKey := c.getHash(key)
-	return &ResponseCache{
-		key:      internalKey,
-		filename: c.getFilename(internalKey),
+	item, exists := c.items[internalKey]
+	if !exists {
+		return false, nil
 	}
+	if err := item.WriteTo(w); err != nil {
+		return false, err
+	}
+	c.pushFront(item)
+
+	return true, nil
+}
+
+func (c *LruCache) Save(key string, headers http.Header, body []byte) error {
+	rc := c.GetOrCreateItem(key)
+	if err := rc.Save(headers, body); err != nil {
+		return err
+	}
+	c.pushFront(rc)
+	return nil
 }
 
 func (c *LruCache) GetOrCreateItem(key string) *ResponseCache {
@@ -42,17 +62,16 @@ func (c *LruCache) GetOrCreateItem(key string) *ResponseCache {
 		return item
 	}
 
-	return c.CreateItem(key)
+	return &ResponseCache{
+		key:      internalKey,
+		filename: filepath.Join(c.directory, internalKey) + ".cache",
+	}
 }
 
-func (c *LruCache) PushFront(item *ResponseCache) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
+func (c *LruCache) pushFront(item *ResponseCache) {
 	if c.front == item {
 		return
 	}
-
 	if len(c.items) >= c.capacity {
 		if c.back != nil {
 			c.remove(c.back)
@@ -81,6 +100,14 @@ func (c *LruCache) Clear() error {
 	return nil
 }
 
+func (c *LruCache) Len() int {
+	return len(c.items)
+}
+
+func (c *LruCache) Cap() int {
+	return c.capacity
+}
+
 func (c *LruCache) remove(rc *ResponseCache) error {
 	if c.front == rc {
 		c.front = rc.next
@@ -100,10 +127,6 @@ func (c *LruCache) remove(rc *ResponseCache) error {
 	delete(c.items, rc.key)
 
 	return rc.Remove()
-}
-
-func (c *LruCache) getFilename(internalKey string) string {
-	return filepath.Join(c.directory, internalKey) + ".cache"
 }
 
 func (c *LruCache) getHash(key string) string {
