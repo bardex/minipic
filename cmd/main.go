@@ -7,6 +7,7 @@ import (
 
 	"github.com/bardex/minipic/internal/app"
 	"github.com/bardex/minipic/internal/httpserver"
+	"github.com/bardex/minipic/internal/httpserver/middleware"
 )
 
 func main() {
@@ -30,9 +31,9 @@ func main() {
 		app.Resizer{},
 	)
 	//
-	//if cfg.Cache.Limit > 0 {
-	//	h = middleware.NewCache(app.NewLruCache(cfg.Cache.Directory, cfg.Cache.Limit), h)
-	//}
+	if cfg.Cache.Limit > 0 {
+		h = middleware.NewCache(app.NewLruCache(cfg.Cache.Directory, cfg.Cache.Limit), h)
+	}
 
 	server := httpserver.NewServer(cfg.Server.Listen, h)
 	fmt.Printf("listening on %s\n", cfg.Server.Listen)

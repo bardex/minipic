@@ -13,6 +13,7 @@ import (
 )
 
 func TestResizer(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		file   string
 		mode   string
@@ -39,7 +40,6 @@ func TestResizer(t *testing.T) {
 		name := fmt.Sprintf("%s_%s_%d_%d", tt.file, tt.mode, tt.width, tt.height)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-
 			src, err := os.Open(tt.file)
 			require.NoError(t, err)
 			defer src.Close()

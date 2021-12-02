@@ -53,7 +53,7 @@ func newMinipicServer() *httptest.Server {
 		app.NewImageDownloader(),
 		app.Resizer{},
 	)
-	h = middleware.NewCache(app.NewLruCache("tmp", 2), h)
+	h = middleware.NewCache(app.NewLruCache("/tmp", 2), h)
 	return httptest.NewServer(h)
 }
 
