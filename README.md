@@ -1,6 +1,7 @@
 # MINIPIC
 [![build](https://github.com/bardex/minipic/actions/workflows/build.yml/badge.svg?branch=dev)](https://github.com/bardex/minipic/actions/workflows/build.yml)
 [![Go Report Card](https://goreportcard.com/badge/bardex/minipic)](https://goreportcard.com/report/bardex/minipic)
+[![codecov](https://codecov.io/gh/bardex/minipic/branch/dev/graph/badge.svg?token=7GZBP1EWTX)](https://codecov.io/gh/bardex/minipic)
 
 HTTP сервис для генерации миниатюр изображений (учебный проект).
 
