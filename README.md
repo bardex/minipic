@@ -52,7 +52,7 @@ GET http://SERVICE_ADDR/MODE/WIDTH/HEIGHT/SRC
 - HEIGHT - целевая высота изображения в px
 - SRC - полный URL исходного изображения
 
-Например: [http://127.0.0.1:9011/fill/800/800/https://images.pexels.com/photos/9009957/pexels-photo-9009957.jpeg](http://127.0.0.1:9011/fill/800/800/https://images.pexels.com/photos/9009957/pexels-photo-9009957.jpeg)
+Например: [http://127.0.0.1:9011/fit/800/500/https://trumpwallpapers.com/wp-content/uploads/Rick-And-Morty-Wallpaper-12-1920-x-1080.png](http://127.0.0.1:9011/fit/800/500/https://trumpwallpapers.com/wp-content/uploads/Rick-And-Morty-Wallpaper-12-1920-x-1080.png)
 
 
 ## Makefile
