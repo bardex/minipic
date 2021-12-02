@@ -11,7 +11,7 @@ run: build
 	./bin/minipic --config=configs/config.toml
 
 tests:
-	go test -v -count=5 -race -timeout=10m ./test/...
+	go test -v -count=5 -race -timeout=15m ./test/...
 
 build-image:
 	docker build --build-arg=LDFLAGS="$(LDFLAGS)" -t $(DOCKER_IMG) -f build/Dockerfile .
