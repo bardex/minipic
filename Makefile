@@ -11,6 +11,7 @@ run: build
 	./bin/minipic --config=configs/config.toml
 
 tests:
+	go test -v -count=20 -race -timeout=10m ./internal/app/...
 	go test -v -count=5 -race -timeout=15m ./test/...
 
 build-image:

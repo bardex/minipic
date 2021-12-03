@@ -16,17 +16,17 @@ var ErrCacheFileNotExists = errors.New("cache file not exists")
 
 type ResponseCache struct {
 	key      string
-	filename string
+	filepath string
 	next     *ResponseCache
 	prev     *ResponseCache
 	mu       sync.RWMutex
 }
 
-func (rc *ResponseCache) Save(headers http.Header, body []byte) error {
+func (rc *ResponseCache) save(headers http.Header, body []byte) error {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 
-	f, err := os.Create(rc.filename)
+	f, err := os.Create(rc.filepath)
 	if err != nil {
 		return err
 	}
@@ -51,15 +51,15 @@ func (rc *ResponseCache) Save(headers http.Header, body []byte) error {
 	return nil
 }
 
-func (rc *ResponseCache) WriteTo(w http.ResponseWriter) error {
+func (rc *ResponseCache) writeTo(w http.ResponseWriter) error {
 	rc.mu.RLock()
 	defer rc.mu.RUnlock()
 
-	if _, err := os.Stat(rc.filename); os.IsNotExist(err) {
-		return fmt.Errorf("%w: %s", ErrCacheFileNotExists, rc.filename)
+	if _, err := os.Stat(rc.filepath); os.IsNotExist(err) {
+		return fmt.Errorf("%w: %s", ErrCacheFileNotExists, rc.filepath)
 	}
 
-	f, err := os.Open(rc.filename)
+	f, err := os.Open(rc.filepath)
 	if err != nil {
 		return err
 	}
@@ -78,6 +78,7 @@ func (rc *ResponseCache) WriteTo(w http.ResponseWriter) error {
 		line = strings.TrimSpace(line)
 		heads := strings.SplitN(line, ":", 2)
 		if len(heads) != 2 {
+			fmt.Println(line)
 			return errors.New("malformed cache file (headers)")
 		}
 		w.Header().Add(heads[0], heads[1])
@@ -103,12 +104,12 @@ func (rc *ResponseCache) WriteTo(w http.ResponseWriter) error {
 	return nil
 }
 
-func (rc *ResponseCache) Remove() error {
+func (rc *ResponseCache) remove() error {
 	rc.mu.Lock()
 	defer rc.mu.Unlock()
 
-	if rc.filename != "" {
-		return os.Remove(rc.filename)
+	if rc.filepath != "" {
+		return os.Remove(rc.filepath)
 	}
 	return nil
 }

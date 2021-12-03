@@ -5,4 +5,4 @@ listen = ":9011"
 # the maximum number of images in the cache. Use 0 for disable cache
 limit=10
 # directory for saving cached images
-directory="tmp"
+directory="/tmp"

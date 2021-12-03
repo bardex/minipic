@@ -15,14 +15,15 @@ import (
 	"github.com/bardex/minipic/internal/httpserver/middleware"
 )
 
+var (
+	release   = "UNKNOWN"
+	buildDate = "UNKNOWN"
+	gitHash   = "UNKNOWN"
+)
+
 func main() {
 	configPath := flag.String("config", "/etc/minipic/config.toml", "Path to configuration file")
 	flag.Parse()
-
-	if flag.Arg(0) == "version" {
-		printVersion()
-		return
-	}
 
 	fmt.Printf("Minipic ver: %s %s %s\n", release, buildDate, gitHash)
 
