@@ -1,13 +1,13 @@
-package test
+package app
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/bardex/minipic/internal/app"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,7 +38,7 @@ func TestResponseCache(t *testing.T) {
 		},
 	}
 
-	cache := app.NewLruCache("/tmp", 5)
+	cache := NewLruCache("/tmp", 1)
 	defer cache.Clear()
 
 	for _, tt := range tests {
@@ -46,7 +46,6 @@ func TestResponseCache(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := cache.Save(tt.name, tt.headers, tt.body)
 			require.NoError(t, err)
-
 			rw := httptest.NewRecorder()
 			hit, err := cache.GetAndWriteTo(tt.name, rw)
 			require.NoError(t, err)
@@ -65,9 +64,49 @@ func TestResponseCache(t *testing.T) {
 	}
 }
 
+func TestLRUCache_Concurrency(t *testing.T) {
+	t.Parallel()
+	cCap := 3
+	cache := NewLruCache("/tmp", cCap)
+	defer cache.Clear()
+
+	items := []struct {
+		key      string
+		headers  http.Header
+		body     []byte
+		filepath string
+	}{
+		{key: "1", headers: http.Header{"Content-Type": {"image/png"}}, body: []byte{10, 10, 10, 10}},
+		{key: "2", headers: http.Header{"Content-Type": {"image/jpeg"}}, body: []byte{20, 20, 20}},
+		{key: "3", headers: http.Header{"Content-Type": {"image/bmp"}}, body: []byte{30, 30}},
+		{key: "4", headers: http.Header{"Content-Type": {"image/gif"}}, body: []byte{40, 40}},
+		{key: "5", headers: http.Header{"Content-Type": {"image/webp"}}, body: []byte{50, 50, 50}},
+		{key: "6", headers: http.Header{"Content-Type": {"image/tiff"}}, body: []byte{50, 50, 50}},
+		{key: "7", headers: http.Header{"Content-Type": {"image/jpg"}}, body: []byte{50, 50, 50}},
+		{key: "8", headers: http.Header{"Content-Type": {"image/svg"}}, body: []byte{50, 50, 50}},
+		{key: "9", headers: http.Header{"Content-Type": {"image/psd"}}, body: []byte{50, 50, 50}},
+	}
+
+	for _, item := range items {
+		item := item
+		for i := 0; i < 5; i++ {
+			t.Run(fmt.Sprintf("%s_%d", item.key, i), func(t *testing.T) {
+				t.Parallel()
+
+				err := cache.Save(item.key, item.headers, item.body)
+				require.NoError(t, err)
+
+				rw := httptest.NewRecorder()
+				_, err = cache.GetAndWriteTo(item.key, rw)
+				require.NoError(t, err)
+			})
+		}
+	}
+}
+
 func TestLRUCache(t *testing.T) {
 	cCap := 3
-	cache := app.NewLruCache("/tmp", cCap)
+	cache := NewLruCache("/tmp", cCap)
 	defer cache.Clear()
 
 	items := []struct {
@@ -91,7 +130,7 @@ func TestLRUCache(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	require.Equal(t, cCap, cache.Len())
+	require.Equal(t, cCap, len(cache.items))
 
 	for n, item := range items {
 		rw := httptest.NewRecorder()
@@ -111,5 +150,5 @@ func TestLRUCache(t *testing.T) {
 		}
 	}
 
-	require.Equal(t, cCap, cache.Len())
+	require.Equal(t, cCap, len(cache.items))
 }
