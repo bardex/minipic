@@ -68,7 +68,9 @@ func TestLRUCache_Concurrency(t *testing.T) {
 	t.Parallel()
 	cCap := 3
 	cache := NewLruCache("/tmp", cCap)
-	defer cache.Clear()
+	t.Cleanup(func() {
+		cache.Clear()
+	})
 
 	items := []struct {
 		key      string

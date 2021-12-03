@@ -52,22 +52,9 @@ func (c *LruCache) Save(key string, headers http.Header, body []byte) error {
 	item, exists := c.items[internalKey]
 
 	if !exists {
-		if len(c.items) >= c.capacity && c.back != nil {
-			last := c.back
-			c.back = last.prev
-			if c.front == last {
-				c.front = last.next
-			}
-			last.next = nil
-			last.prev = nil
-
-			delete(c.items, last.key)
-
-			if err := last.remove(); err != nil {
-				return err
-			}
+		if err := c.removeLast(); err != nil {
+			return err
 		}
-
 		item = &ResponseCache{
 			key:      internalKey,
 			filepath: filepath.Join(c.directory, internalKey) + ".cache",
@@ -80,6 +67,25 @@ func (c *LruCache) Save(key string, headers http.Header, body []byte) error {
 	}
 
 	return c.pushFront(item)
+}
+
+func (c *LruCache) removeLast() error {
+	if len(c.items) >= c.capacity && c.back != nil {
+		last := c.back
+		c.back = last.prev
+		if c.front == last {
+			c.front = last.next
+		}
+		last.next = nil
+		last.prev = nil
+
+		delete(c.items, last.key)
+
+		if err := last.remove(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *LruCache) pushFront(item *ResponseCache) error {
